@@ -7,5 +7,5 @@ add_subdirectory(biped)
 
 find_package(ifopt)
 
-add_executable(to_hzd main.cpp spline.cpp)
+add_executable(to_hzd main.cpp)
 target_link_libraries(to_hzd biped ifopt::ifopt_ipopt)
