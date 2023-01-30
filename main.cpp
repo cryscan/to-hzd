@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <limits>
+#include <cmath>
 
 #include <Eigen/Geometry>
 
@@ -16,17 +18,11 @@ namespace to {
     static constexpr int pose_state_dim = 7 + JointSpaceDimension;
     static constexpr int state_dim = 6 + JointSpaceDimension;
 
-    enum Derivative {
-        POSITION = 0,
-        VELOCITY,
-        ACCELERATION
-    };
+    template<typename Scalar, int N>
+    class Polynomial;
 
-    enum Component {
-        BASE_ANGULAR = 0,
-        BASE_LINEAR,
-        JOINT_STATE
-    };
+    template<typename Scalar>
+    class RotationAdaptor;
 
     struct Model {
         Model() :
@@ -44,17 +40,20 @@ namespace to {
         JSIM jsim;
     };
 
-    template<typename Scalar, int N>
+    template<typename Scalar, int N, int T = N>
     struct Node {
-        Eigen::Vector<Scalar, N> x, xd;
+        Eigen::Vector<Scalar, N> x;
+        Eigen::Vector<Scalar, T> xd;
     };
 
     template<typename Scalar, int N>
     class Polynomial {
     public:
+        friend class RotationAdaptor<Scalar>;
+
         using ADScalar = CppAD::AD<Scalar>;
 
-        explicit Polynomial(const Scalar& dt) : dt{dt} {
+        explicit Polynomial(const Scalar& dt) {
             Eigen::VectorX<ADScalar> t(1), n(4 * N), p(N), pd(N);
 
             CppAD::Independent(t, n);
@@ -75,26 +74,25 @@ namespace to {
 
             p = a * x;
             fun_p.Dependent(p);
-            fun_p.optimize("no_compare_op");
+//            fun_p.optimize("no_compare_op");
 
-            auto fun_ad_p = fun_p.base2ad();
             CppAD::Independent(t, n);
-
+            auto fun_ad_p = fun_p.base2ad();
             fun_ad_p.new_dynamic(n);
-            pd << fun_ad_p.Jacobian(t);
 
+            pd << fun_ad_p.Jacobian(t);
             fun_pd.Dependent(pd);
-            fun_pd.optimize("no_compare_op");
+//            fun_pd.optimize("no_compare_op");
         }
 
-        virtual void update_nodes(const Node<Scalar, N>& head, const Node<Scalar, N>& tail) {
+        void update_nodes(const Node<Scalar, N>& head, const Node<Scalar, N>& tail) {
             Eigen::VectorX<Scalar> n(4 * N);
             n << head.x, head.xd, tail.x, tail.xd;
             fun_p.new_dynamic(n);
             fun_pd.new_dynamic(n);
         }
 
-        virtual Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
+        Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
             Eigen::VectorX<Scalar> vt(1);
             vt << t;
 
@@ -110,96 +108,143 @@ namespace to {
             }
         }
 
-    protected:
-        const Scalar dt;
+    private:
         CppAD::ADFun<Scalar> fun_p, fun_pd;
     };
 
     template<typename Scalar>
-    class QuaternionPolynomial : public Polynomial<Scalar, 4> {
+    class RotationAdaptor {
     public:
-        using Base = Polynomial<Scalar, 4>;
         using ADScalar = CppAD::AD<Scalar>;
+        static constexpr int N = 4, T = 3;
 
-        static constexpr int N = 4, M = 3;
+        Polynomial<Scalar, T> polynomial;
 
-        explicit QuaternionPolynomial(const Scalar& dt) : Base(dt) {
-            Eigen::VectorX<ADScalar> t(1), n(4 * N), v(M);
-
-            ADScalar _0{0.0}, _1{1.0};
-            n << _1, _0, _0, _0,
-                _0, _0, _0, _0,
-                _1, _0, _0, _0,
-                _0, _0, _0, _0;
-
-            Eigen::Vector4<ADScalar> p, pd;
+        explicit RotationAdaptor(const Scalar& dt) : polynomial(dt) {
+            Eigen::VectorX<ADScalar> t(1), n(4 * T), q_c(4), w(3);
+            Eigen::Vector3<ADScalar> v, dv;
 
             CppAD::Independent(t, n);
-
-            auto fun_ad_p = Base::fun_p.base2ad();
+            auto fun_ad_p = polynomial.fun_p.base2ad();
             fun_ad_p.new_dynamic(n);
+            v << fun_ad_p.Forward(0, t);
 
-            p << fun_ad_p.Forward(0, t);
-            pd << fun_ad_p.Jacobian(t);
+            q_c << exp(v);
+            fun_q.Dependent(q_c);
 
-            Eigen::Quaternion<ADScalar> r{p}, rd{pd}, r_rd;
-            r_rd = rd * r.conjugate();
+            CppAD::Independent(t, n);
+            auto fun_ad_q = fun_q.base2ad();
+            fun_ad_q.new_dynamic(n);
 
-            v << Scalar(2.0) * r_rd.coeffs().tail(M) / r.squaredNorm();
-            fun_v.Dependent(v);
-            fun_v.optimize("no_compare_op");
+            Eigen::Vector4<ADScalar> qd_c4, q_c4;
+            q_c4 << fun_ad_q.Forward(0, t);
+            qd_c4 << fun_ad_q.Jacobian(t);
+            Eigen::Quaternion<ADScalar> qd{qd_c4}, q{q_c4};
+
+            ADScalar _2{2.0};
+            w << _2 * (qd * q.inverse()).coeffs().tail(3);
+            fun_w.Dependent(w);
         }
 
-        void update_nodes(const Node<Scalar, N>& head, const Node<Scalar, N>& tail) override {
-            Eigen::VectorX<Scalar> n(4 * N);
+        void update_nodes(const Node<Scalar, T>& head, const Node<Scalar, T>& tail) {
+            polynomial.update_nodes(head, tail);
+
+            Eigen::VectorX<Scalar> n(4 * T);
             n << head.x, head.xd, tail.x, tail.xd;
-            Base::fun_p.new_dynamic(n);
-            fun_v.new_dynamic(n);
+            fun_q.new_dynamic(n);
+            fun_w.new_dynamic(n);
         }
 
-        Eigen::VectorX<Scalar> eval(const Scalar& t, int n) override {
+        Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
             Eigen::VectorX<Scalar> vt(1);
             vt << t;
 
             switch (n) {
                 case 0:
-                    return Base::fun_p.Forward(0, vt);
+                    return fun_q.Forward(0, vt);
                 case 1:
-                    return fun_v.Forward(0, vt);
+                    return fun_w.Forward(0, vt);
                 case 2:
-                    return fun_v.Jacobian(vt);
+                    return fun_w.Jacobian(vt);
                 default:
                     assert(false);
             }
         }
 
     private:
-        CppAD::ADFun<Scalar> fun_v;
+        Eigen::Quaternion<Scalar> r0;
+        CppAD::ADFun<Scalar> fun_q, fun_w;
+
+        static Eigen::Vector4<ADScalar> exp(const Eigen::Vector3<ADScalar> v) {
+            constexpr double eps = 0.00012207;
+            ADScalar _1_2{0.5}, _1{1.0}, _8{8.0}, _48{48.0}, _384{384.0}, _eps{eps};
+
+            ADScalar t2 = v.squaredNorm();
+            ADScalar t4 = t2 * t2;
+            ADScalar t = CppAD::sqrt(t2);
+            ADScalar st = CppAD::sin(_1_2 * t);
+            ADScalar ct = CppAD::CondExpLe(t, _eps, _1 - t2 / _8 + t4 / _384, CppAD::cos(_1_2 * t));
+            ADScalar sc = CppAD::CondExpLe(t, _eps, _1_2 + t2 / _48, st / t);
+
+            Eigen::Vector3<ADScalar> sv = sc * v;
+            return {sv(0), sv(1), sv(2), ct};
+        }
+
+        static Eigen::Matrix<ADScalar, 4, 3> exp_jac(const Eigen::Vector3<ADScalar> v) {
+            constexpr double eps = 0.00012207;
+            ADScalar _1_2{0.5}, _1{1.0}, _24{24.0}, _48{48.0}, _40{40.0}, _eps{eps};
+
+            ADScalar t2 = v.squaredNorm();
+            ADScalar t = CppAD::sqrt(t2);
+            ADScalar t3 = t2 * t;
+            ADScalar st = CppAD::sin(_1_2 * t), ct = CppAD::cos(_1_2 * t);
+            ADScalar sc = CppAD::CondExpLe(t, _eps, _1_2 + t2 / _48, st / t);
+
+            Eigen::Matrix<ADScalar, 4, 3> jac;
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    if (i == 3) {
+                        jac(i, j) = -_1_2 * v(j) * sc;
+                    } else {
+                        ADScalar approx = v(i) * v(j) / _24 * (t2 / _40 - _1);
+                        ADScalar exact = v(i) * v(j) * (_1_2 * ct / t2 - st / t3);
+                        jac(i, j) = CppAD::CondExpLe(t, _eps, approx, exact);
+                        if (i == j) jac(i, j) += sc;
+                    }
+                }
+            }
+        }
     };
 }
 
 int main() {
     using namespace biped::rcg;
 
-    to::Polynomial<Scalar, 4> polynomial(10.0);
+    Scalar t{5.0};
 
-    to::Node<Scalar, 4> head{Eigen::Vector4<Scalar>{1.0, 0.0, 0.0, 0.0}, Eigen::Vector4<Scalar>{0.0, 0.0, 0.0, 0.0}};
-    to::Node<Scalar, 4> tail{Eigen::Vector4<Scalar>{0.0, 1.0, 0.0, 0.0}, Eigen::Vector4<Scalar>{0.0, 0.0, 0.0, 0.0}};
+    {
+        to::Polynomial<Scalar, 4> polynomial(10.0);
 
-    polynomial.update_nodes(head, tail);
+        to::Node<Scalar, 4> head{Eigen::Vector4<Scalar>{1.0, 0.0, 0.0, 0.0}, Eigen::Vector4<Scalar>{0.0, 0.0, 0.0, 0.0}};
+        to::Node<Scalar, 4> tail{Eigen::Vector4<Scalar>{0.0, 1.0, 0.0, 0.0}, Eigen::Vector4<Scalar>{0.0, 0.0, 0.0, 0.0}};
 
-    Scalar t{0.25};
+        polynomial.update_nodes(head, tail);
 
-    std::cout << polynomial.eval(t, 0).transpose() << '\n';
-    std::cout << polynomial.eval(t, 1).transpose() << '\n';
-    std::cout << polynomial.eval(t, 2).transpose() << '\n';
+        std::cout << polynomial.eval(t, 0).transpose() << '\n';
+        std::cout << polynomial.eval(t, 1).transpose() << '\n';
+        std::cout << polynomial.eval(t, 2).transpose() << '\n';
+    }
 
-    to::QuaternionPolynomial<Scalar> quaternion_polynomial(10.0);
-    quaternion_polynomial.update_nodes(head, tail);
+    {
+        to::Node<Scalar, 3> head{Eigen::Vector3<Scalar>{1.0, 0.0, 0.0}, Eigen::Vector3<Scalar>{0.0, 0.0, 0.0}};
+        to::Node<Scalar, 3> tail{Eigen::Vector3<Scalar>{0.0, 1.0, 0.0}, Eigen::Vector3<Scalar>{0.0, 0.0, 0.0}};
 
-    std::cout << quaternion_polynomial.eval(t, 0).transpose() << '\n';
-    std::cout << quaternion_polynomial.eval(t, 1).transpose() << '\n';
-    std::cout << quaternion_polynomial.eval(t, 2).transpose() << '\n';
+        to::RotationAdaptor<Scalar> rotation_adaptor(10.0);
+        rotation_adaptor.update_nodes(head, tail);
 
+        std::cout << rotation_adaptor.eval(t, 0).transpose() << '\n';
+        std::cout << rotation_adaptor.eval(t, 1).transpose() << '\n';
+        std::cout << rotation_adaptor.eval(t, 2).transpose() << '\n';
+    }
     return 0;
 }
