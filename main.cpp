@@ -175,6 +175,8 @@ namespace to {
         Eigen::Quaternion<Scalar> r0;
         CppAD::ADFun<Scalar> fun_q, fun_w;
 
+        // Exponential map that maps R^3 to S^3.
+        // Reference: https://www.cs.cmu.edu/~spiff/moedit99/expmap.pdf
         static Eigen::Vector4<ADScalar> exp(const Eigen::Vector3<ADScalar> v) {
             constexpr double eps = 0.00012207;
             ADScalar _1_2{0.5}, _1{1.0}, _8{8.0}, _48{48.0}, _384{384.0}, _eps{eps};
