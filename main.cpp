@@ -71,7 +71,7 @@ namespace to {
             a.col(3) << _1 / (dt * dt * dt) * (_2 * (head.x - tail.x) + dt * (head.xd + tail.xd));
 
             Eigen::Vector4<ADScalar> x;
-            x << ADScalar(1.0), t(0), t(0) * t(0), t(0) * t(0) * t(0);
+            x << _1, t(0), t(0) * t(0), t(0) * t(0) * t(0);
 
             p = a * x;
             fun_p.Dependent(p);
