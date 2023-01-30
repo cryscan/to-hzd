@@ -189,31 +189,6 @@ namespace to {
             Eigen::Vector3<ADScalar> sv = sc * v;
             return {sv(0), sv(1), sv(2), ct};
         }
-
-        static Eigen::Matrix<ADScalar, 4, 3> exp_jac(const Eigen::Vector3<ADScalar> v) {
-            constexpr double eps = 0.00012207;
-            ADScalar _1_2{0.5}, _1{1.0}, _24{24.0}, _48{48.0}, _40{40.0}, _eps{eps};
-
-            ADScalar t2 = v.squaredNorm();
-            ADScalar t = CppAD::sqrt(t2);
-            ADScalar t3 = t2 * t;
-            ADScalar st = CppAD::sin(_1_2 * t), ct = CppAD::cos(_1_2 * t);
-            ADScalar sc = CppAD::CondExpLe(t, _eps, _1_2 + t2 / _48, st / t);
-
-            Eigen::Matrix<ADScalar, 4, 3> jac;
-            for (int i = 0; i < 4; ++i) {
-                for (int j = 0; j < 3; ++j) {
-                    if (i == 3) {
-                        jac(i, j) = -_1_2 * v(j) * sc;
-                    } else {
-                        ADScalar approx = v(i) * v(j) / _24 * (t2 / _40 - _1);
-                        ADScalar exact = v(i) * v(j) * (_1_2 * ct / t2 - st / t3);
-                        jac(i, j) = CppAD::CondExpLe(t, _eps, approx, exact);
-                        if (i == j) jac(i, j) += sc;
-                    }
-                }
-            }
-        }
     };
 }
 
