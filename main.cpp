@@ -74,7 +74,7 @@ namespace to {
 
             p = a * x;
             fun_p.Dependent(p);
-//            fun_p.optimize("no_compare_op");
+            if constexpr (N > 3) fun_p.optimize("no_compare_op");
 
             CppAD::Independent(t, n);
             auto fun_ad_p = fun_p.base2ad();
@@ -82,7 +82,7 @@ namespace to {
 
             pd << fun_ad_p.Jacobian(t);
             fun_pd.Dependent(pd);
-//            fun_pd.optimize("no_compare_op");
+            if constexpr (N > 3) fun_pd.optimize("no_compare_op");
         }
 
         void update_nodes(const Node<Scalar, N>& head, const Node<Scalar, N>& tail) {
@@ -93,9 +93,7 @@ namespace to {
         }
 
         Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
-            Eigen::VectorX<Scalar> vt(1);
-            vt << t;
-
+            Eigen::VectorX<Scalar> vt = Eigen::Vector<Scalar, 1>{t};
             switch (n) {
                 case 0:
                     return fun_p.Forward(0, vt);
@@ -121,29 +119,30 @@ namespace to {
         Polynomial<Scalar, T> polynomial;
 
         explicit RotationAdaptor(const Scalar& dt) : polynomial(dt) {
-            Eigen::VectorX<ADScalar> t(1), n(4 * T), q_c(4), w(3);
-            Eigen::Vector3<ADScalar> v, dv;
+            Eigen::VectorX<ADScalar> t(1), n(4 * T), q(4), w(3);
 
             CppAD::Independent(t, n);
             auto fun_ad_p = polynomial.fun_p.base2ad();
             fun_ad_p.new_dynamic(n);
-            v << fun_ad_p.Forward(0, t);
 
-            q_c << exp(v);
-            fun_q.Dependent(q_c);
+            Eigen::Vector3<ADScalar> v = fun_ad_p.Forward(0, t);
+            q << exp(v);
+
+            fun_q.Dependent(q);
+            fun_q.optimize("no_compare_op");
 
             CppAD::Independent(t, n);
             auto fun_ad_q = fun_q.base2ad();
             fun_ad_q.new_dynamic(n);
 
-            Eigen::Vector4<ADScalar> qd_c4, q_c4;
-            q_c4 << fun_ad_q.Forward(0, t);
-            qd_c4 << fun_ad_q.Jacobian(t);
-            Eigen::Quaternion<ADScalar> qd{qd_c4}, q{q_c4};
+            Eigen::Vector4<ADScalar> q4 = fun_ad_q.Forward(0, t);
+            Eigen::Vector4<ADScalar> qd = fun_ad_q.Jacobian(t);
+            Eigen::Quaternion<ADScalar> r{q4}, rd{qd};
 
             ADScalar _2{2.0};
-            w << _2 * (qd * q.inverse()).coeffs().tail(3);
+            w << _2 * (rd * r.inverse()).coeffs().tail(3);
             fun_w.Dependent(w);
+            fun_w.optimize("no_compare_op");
         }
 
         void update_nodes(const Node<Scalar, T>& head, const Node<Scalar, T>& tail) {
@@ -156,9 +155,7 @@ namespace to {
         }
 
         Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
-            Eigen::VectorX<Scalar> vt(1);
-            vt << t;
-
+            Eigen::VectorX<Scalar> vt = Eigen::Vector<Scalar, 1>{t};
             switch (n) {
                 case 0:
                     return fun_q.Forward(0, vt);
@@ -169,6 +166,11 @@ namespace to {
                 default:
                     assert(false);
             }
+        }
+
+        Eigen::VectorX<Scalar> eval_qd(const Scalar& t) {
+            Eigen::VectorX<Scalar> vt = Eigen::Vector<Scalar, 1>{t};
+            return fun_q.Jacobian(vt);
         }
 
     private:
@@ -222,6 +224,8 @@ int main() {
         std::cout << rotation_adaptor.eval(t, 0).transpose() << '\n';
         std::cout << rotation_adaptor.eval(t, 1).transpose() << '\n';
         std::cout << rotation_adaptor.eval(t, 2).transpose() << '\n';
+
+        std::cout << rotation_adaptor.eval_qd(t).transpose() << '\n';
     }
     return 0;
 }
