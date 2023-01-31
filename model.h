@@ -6,20 +6,16 @@
 #define TO_HZD_MODEL_H
 
 #include "biped/declarations.h"
-#include "biped/transforms.h"
-#include "biped/jacobians.h"
 #include "biped/inertia_properties.h"
 #include "biped/inverse_dynamics.h"
+#include "biped/jacobians.h"
 #include "biped/jsim.h"
+#include "biped/transforms.h"
 
 #include "forward.h"
 #include "spline.h"
 
 namespace to {
-    struct State {
-
-    };
-
     struct Model {
         biped::rcg::HomogeneousTransforms homogeneous_transforms;
         biped::rcg::MotionTransforms motion_transforms;
@@ -30,11 +26,18 @@ namespace to {
         biped::rcg::InverseDynamics inverse_dynamics;
         biped::rcg::JSIM jsim;
 
-        Model() :
-            inverse_dynamics(inertia_properties, motion_transforms),
-            jsim(inertia_properties, force_transforms) {
+        Model()
+            : inverse_dynamics(inertia_properties, motion_transforms),
+              jsim(inertia_properties, force_transforms) {
         }
     };
-}
+    struct State {
+        biped::rcg::JointState q, qd, qdd;
+        Eigen::Quaternion<biped::rcg::Scalar> r;
+        Eigen::Vector3<biped::rcg::Scalar> rd, rdd;
+        Eigen::Vector3<biped::rcg::Scalar> p, pd, pdd;
+    };
 
-#endif //TO_HZD_MODEL_H
+}// namespace to
+
+#endif//TO_HZD_MODEL_H

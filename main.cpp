@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "spline.h"
 #include "model.h"
+#include "spline.h"
 
 int main() {
     using namespace biped::rcg;
@@ -37,7 +37,7 @@ int main() {
 
     {
         std::vector<to::Node<Scalar>> nodes{
-            {Eigen::Vector3<Scalar>{0.0, 0.0, 0.0},    Eigen::Vector3<Scalar>::Zero()},
+            {Eigen::Vector3<Scalar>{0.0, 0.0, 0.0}, Eigen::Vector3<Scalar>::Zero()},
             {Eigen::Vector3<Scalar>{M_PI_2, 0.0, 0.0}, Eigen::Vector3<Scalar>{0.0, 0.0, 1.0}},
             {Eigen::Vector3<Scalar>{0.0, M_PI_2, 0.0}, Eigen::Vector3<Scalar>{1.0, 0.0, 0.0}},
             {Eigen::Vector3<Scalar>{0.0, 0.0, M_PI_2}, Eigen::Vector3<Scalar>::Zero()},

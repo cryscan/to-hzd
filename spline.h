@@ -5,27 +5,27 @@
 #ifndef TO_HZD_SPLINE_H
 #define TO_HZD_SPLINE_H
 
+#include <cmath>
 #include <utility>
 #include <vector>
-#include <cmath>
 
-#include <cppad/cppad.hpp>
 #include <Eigen/Geometry>
+#include <cppad/cppad.hpp>
 
 #include "forward.h"
 
 namespace to {
+    template<typename Polynomial, typename Scalar, typename Node>
+    concept PolynomialType = requires(Polynomial& p, const Node& node, const Scalar& t, int n) {
+                                 { p.D } -> std::convertible_to<int>;
+                                 { p.update_nodes(node, node) };
+                                 { p.eval(t, n) } -> std::convertible_to<Eigen::VectorX<Scalar>>;
+                             };
+
     template<typename Scalar>
     struct Node {
         Eigen::VectorX<Scalar> x;
         Eigen::VectorX<Scalar> xd;
-    };
-
-    template<typename P, typename Scalar>
-    concept PolynomialType = requires(P& p, const Node<Scalar>& node, const Scalar& t, int n) {
-        std::convertible_to<int, decltype(p.D)>;
-        p.update_nodes(node, node);
-        std::convertible_to<Eigen::VectorX<Scalar>, decltype(p.eval(t, n))>;
     };
 
     template<typename Scalar>
@@ -36,7 +36,8 @@ namespace to {
         using ADScalar = CppAD::AD<Scalar>;
         const int D;
 
-        Polynomial(const Scalar& dt, int d) : D{d} {
+        Polynomial(const Scalar& dt, int d)
+            : D{d} {
             Eigen::VectorX<ADScalar> t(1), x(4 * d), p(d), pd(d);
 
             CppAD::Independent(t, x);
@@ -76,14 +77,10 @@ namespace to {
         Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
             Eigen::VectorX<Scalar> vt = Eigen::Vector<Scalar, 1>{t};
             switch (n) {
-                case 0:
-                    return fun_p.Forward(0, vt);
-                case 1:
-                    return fun_pd.Forward(0, vt);
-                case 2:
-                    return fun_pd.Jacobian(vt);
-                default:
-                    assert(false);
+                case 0: return fun_p.Forward(0, vt);
+                case 1: return fun_pd.Forward(0, vt);
+                case 2: return fun_pd.Jacobian(vt);
+                default: assert(false);
             }
         }
 
@@ -97,7 +94,8 @@ namespace to {
         using ADScalar = CppAD::AD<Scalar>;
         static constexpr int D = 3;
 
-        explicit RotationAdaptor(const Scalar& dt, int d = D) : polynomial(dt, D) {
+        explicit RotationAdaptor(const Scalar& dt, int d = D)
+            : polynomial(dt, D) {
             assert(d == D);
             Eigen::VectorX<ADScalar> t(1), x(4 * D), q(4), w(3);
 
@@ -137,14 +135,10 @@ namespace to {
         Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
             Eigen::VectorX<Scalar> vt = Eigen::Vector<Scalar, 1>{t};
             switch (n) {
-                case 0:
-                    return fun_q.Forward(0, vt);
-                case 1:
-                    return fun_w.Forward(0, vt);
-                case 2:
-                    return fun_w.Jacobian(vt);
-                default:
-                    assert(false);
+                case 0: return fun_q.Forward(0, vt);
+                case 1: return fun_w.Forward(0, vt);
+                case 2: return fun_w.Jacobian(vt);
+                default: assert(false);
             }
         }
 
@@ -175,15 +169,17 @@ namespace to {
         }
     };
 
-    template<typename Scalar, typename Polynomial> requires(PolynomialType<Polynomial, Scalar>)
+    template<typename Scalar, PolynomialType<Scalar, Node<Scalar>> Polynomial>
     class Spline {
     public:
         using Nodes = std::vector<Node<Scalar>>;
         using Polynomials = std::vector<Polynomial>;
         const int D;
 
-        Spline(Nodes nodes, const Scalar& dt, int d) :
-            nodes{std::move(nodes)}, dt{dt}, D{d} {
+        Spline(Nodes nodes, const Scalar& dt, int d)
+            : nodes{std::move(nodes)},
+              dt{dt},
+              D{d} {
             update_polynomials();
         }
 
@@ -225,6 +221,6 @@ namespace to {
             }
         }
     };
-}
+}// namespace to
 
-#endif //TO_HZD_SPLINE_H
+#endif//TO_HZD_SPLINE_H

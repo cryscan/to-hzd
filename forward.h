@@ -13,6 +13,6 @@ namespace to {
     class RotationAdaptor;
 
     class Model;
-}
+}// namespace to
 
-#endif //TO_HZD_FORWARD_H
+#endif//TO_HZD_FORWARD_H
