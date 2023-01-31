@@ -9,7 +9,7 @@
 #include "model_constants.h"
 #include "dynamics_parameters.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 class InertiaProperties {

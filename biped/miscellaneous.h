@@ -4,7 +4,7 @@
 #include "inertia_properties.h"
 #include "transforms.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 /** \name Center of mass calculation

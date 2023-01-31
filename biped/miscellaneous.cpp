@@ -1,9 +1,9 @@
 #include <iit/rbd/utils.h>
 #include "miscellaneous.h"
 
-using namespace biped::rcg;
+using namespace Biped::rcg;
 
-Vector3 biped::rcg::getWholeBodyCOM(
+Vector3 Biped::rcg::getWholeBodyCOM(
     const InertiaProperties& inertiaProps,
     const HomogeneousTransforms& ht)
 {
@@ -44,7 +44,7 @@ Vector3 biped::rcg::getWholeBodyCOM(
     return tmpSum / inertiaProps.getTotalMass();
 }
 
-Vector3 biped::rcg::getWholeBodyCOM(
+Vector3 Biped::rcg::getWholeBodyCOM(
     const InertiaProperties& inertiaProps,
     const JointState& q,
     HomogeneousTransforms& ht)

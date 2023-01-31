@@ -9,16 +9,16 @@
 #include "transforms.h"
 #include "inertia_properties.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 /**
  * The type of the Joint Space Inertia Matrix (JSIM) of the robot Biped.
  */
-class JSIM : public iit::rbd::StateDependentMatrix<biped::rcg::JointState, 12, 12, JSIM>
+class JSIM : public iit::rbd::StateDependentMatrix<Biped::rcg::JointState, 12, 12, JSIM>
 {
     private:
-        typedef iit::rbd::StateDependentMatrix<biped::rcg::JointState, 12, 12, JSIM> Base;
+        typedef iit::rbd::StateDependentMatrix<Biped::rcg::JointState, 12, 12, JSIM> Base;
     public:
         typedef Base::Scalar     Scalar;
         typedef Base::Index      Index;

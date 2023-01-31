@@ -1,7 +1,7 @@
 #ifndef _BIPED_RUNTIME_INERTIA_PARAMETERS_
 #define _BIPED_RUNTIME_INERTIA_PARAMETERS_
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 /**

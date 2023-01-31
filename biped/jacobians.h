@@ -7,7 +7,7 @@
 #include "transforms.h" // to use the same 'Parameters' struct defined there
 #include "model_constants.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 template<int COLS, class M>

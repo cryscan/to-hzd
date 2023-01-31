@@ -4,7 +4,7 @@
 #include "spline.h"
 
 int main() {
-    using namespace biped::rcg;
+    using namespace Biped::rcg;
 
     Scalar t{7.5};
 
@@ -45,7 +45,7 @@ int main() {
 
         to::Spline<Scalar, to::RotationAdaptor<Scalar>> spline(nodes, 0.1, 3);
 
-        t = Scalar{0.25};
+        t = Scalar{0.3};
 
         std::cout << spline.polynomial_id(t) << '\n';
         std::cout << spline.eval(t, 0).transpose() << '\n';

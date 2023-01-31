@@ -18,7 +18,7 @@
  * properties.
  */
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 // Do not use 'constexpr' to allow for non-literal scalar types

@@ -1,6 +1,6 @@
 #include "jacobians.h"
 
-biped::rcg::Jacobians::Jacobians()
+Biped::rcg::Jacobians::Jacobians()
 :    fr_trunk_J_body(), 
     fr_trunk_J_fr_L_hip(), 
     fr_trunk_J_fr_R_hip(), 
@@ -12,23 +12,23 @@ biped::rcg::Jacobians::Jacobians()
     fr_trunk_J_R_foot()
 {}
 
-void biped::rcg::Jacobians::updateParameters(const Params_lengths& _lengths, const Params_angles& _angles)
+void Biped::rcg::Jacobians::updateParameters(const Params_lengths& _lengths, const Params_angles& _angles)
 {
     params.lengths = _lengths;
     params.angles = _angles;
     params.trig.update();
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_body::Type_fr_trunk_J_body()
+Biped::rcg::Jacobians::Type_fr_trunk_J_body::Type_fr_trunk_J_body()
 {
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_body& biped::rcg::Jacobians::Type_fr_trunk_J_body::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_body& Biped::rcg::Jacobians::Type_fr_trunk_J_body::update(const JointState& q)
 {
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip::Type_fr_trunk_J_fr_L_hip()
+Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip::Type_fr_trunk_J_fr_L_hip()
 {
     (*this)(0,0) = -1.0;
     (*this)(1,0) = 0.0;
@@ -38,12 +38,12 @@ biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip::Type_fr_trunk_J_fr_L_hip()
     (*this)(5,0) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip& biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip& Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_hip::update(const JointState& q)
 {
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip::Type_fr_trunk_J_fr_R_hip()
+Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip::Type_fr_trunk_J_fr_R_hip()
 {
     (*this)(0,0) = 1.0;
     (*this)(1,0) = 0.0;
@@ -53,12 +53,12 @@ biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip::Type_fr_trunk_J_fr_R_hip()
     (*this)(5,0) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip& biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip& Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_hip::update(const JointState& q)
 {
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh::Type_fr_trunk_J_fr_L_thigh()
+Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh::Type_fr_trunk_J_fr_L_thigh()
 {
     (*this)(0,0) = -1.0;
     (*this)(0,1) = 0.0;
@@ -70,7 +70,7 @@ biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh::Type_fr_trunk_J_fr_L_thigh()
     (*this)(5,1) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh& biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh& Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh::update(const JointState& q)
 {
     Scalar sin_q_L_HAA  = ScalarTraits::sin( q(L_HAA) );
     Scalar cos_q_L_HAA  = ScalarTraits::cos( q(L_HAA) );
@@ -83,7 +83,7 @@ const biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_thigh& biped::rcg::Jacobians::
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh::Type_fr_trunk_J_fr_R_thigh()
+Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh::Type_fr_trunk_J_fr_R_thigh()
 {
     (*this)(0,0) = 1.0;
     (*this)(0,1) = 0.0;
@@ -95,7 +95,7 @@ biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh::Type_fr_trunk_J_fr_R_thigh()
     (*this)(5,1) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh& biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh& Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh::update(const JointState& q)
 {
     Scalar sin_q_R_HAA  = ScalarTraits::sin( q(R_HAA) );
     Scalar cos_q_R_HAA  = ScalarTraits::cos( q(R_HAA) );
@@ -108,7 +108,7 @@ const biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_thigh& biped::rcg::Jacobians::
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin::Type_fr_trunk_J_fr_L_shin()
+Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin::Type_fr_trunk_J_fr_L_shin()
 {
     (*this)(0,0) = -1.0;
     (*this)(0,1) = 0.0;
@@ -121,7 +121,7 @@ biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin::Type_fr_trunk_J_fr_L_shin()
     (*this)(5,2) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin& biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin& Biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin::update(const JointState& q)
 {
     Scalar sin_q_L_HAA  = ScalarTraits::sin( q(L_HAA) );
     Scalar cos_q_L_HAA  = ScalarTraits::cos( q(L_HAA) );
@@ -141,7 +141,7 @@ const biped::rcg::Jacobians::Type_fr_trunk_J_fr_L_shin& biped::rcg::Jacobians::T
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin::Type_fr_trunk_J_fr_R_shin()
+Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin::Type_fr_trunk_J_fr_R_shin()
 {
     (*this)(0,0) = 1.0;
     (*this)(0,1) = 0.0;
@@ -154,7 +154,7 @@ biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin::Type_fr_trunk_J_fr_R_shin()
     (*this)(5,2) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin& biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin& Biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin::update(const JointState& q)
 {
     Scalar sin_q_R_HAA  = ScalarTraits::sin( q(R_HAA) );
     Scalar cos_q_R_HAA  = ScalarTraits::cos( q(R_HAA) );
@@ -174,7 +174,7 @@ const biped::rcg::Jacobians::Type_fr_trunk_J_fr_R_shin& biped::rcg::Jacobians::T
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_L_foot::Type_fr_trunk_J_L_foot()
+Biped::rcg::Jacobians::Type_fr_trunk_J_L_foot::Type_fr_trunk_J_L_foot()
 {
     (*this)(0,0) = -1.0;
     (*this)(0,1) = 0.0;
@@ -184,7 +184,7 @@ biped::rcg::Jacobians::Type_fr_trunk_J_L_foot::Type_fr_trunk_J_L_foot()
     (*this)(3,0) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_L_foot& biped::rcg::Jacobians::Type_fr_trunk_J_L_foot::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_L_foot& Biped::rcg::Jacobians::Type_fr_trunk_J_L_foot::update(const JointState& q)
 {
     Scalar sin_q_L_HAA  = ScalarTraits::sin( q(L_HAA) );
     Scalar cos_q_L_HAA  = ScalarTraits::cos( q(L_HAA) );
@@ -207,7 +207,7 @@ const biped::rcg::Jacobians::Type_fr_trunk_J_L_foot& biped::rcg::Jacobians::Type
     return *this;
 }
 
-biped::rcg::Jacobians::Type_fr_trunk_J_R_foot::Type_fr_trunk_J_R_foot()
+Biped::rcg::Jacobians::Type_fr_trunk_J_R_foot::Type_fr_trunk_J_R_foot()
 {
     (*this)(0,0) = 1.0;
     (*this)(0,1) = 0.0;
@@ -217,7 +217,7 @@ biped::rcg::Jacobians::Type_fr_trunk_J_R_foot::Type_fr_trunk_J_R_foot()
     (*this)(3,0) = 0.0;
 }
 
-const biped::rcg::Jacobians::Type_fr_trunk_J_R_foot& biped::rcg::Jacobians::Type_fr_trunk_J_R_foot::update(const JointState& q)
+const Biped::rcg::Jacobians::Type_fr_trunk_J_R_foot& Biped::rcg::Jacobians::Type_fr_trunk_J_R_foot::update(const JointState& q)
 {
     Scalar sin_q_R_HAA  = ScalarTraits::sin( q(R_HAA) );
     Scalar cos_q_R_HAA  = ScalarTraits::cos( q(R_HAA) );

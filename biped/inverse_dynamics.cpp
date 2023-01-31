@@ -7,13 +7,13 @@
 #endif
 using namespace std;
 using namespace iit::rbd;
-using namespace biped::rcg;
+using namespace Biped::rcg;
 
 // Initialization of static-const data
-const biped::rcg::InverseDynamics::ExtForces
-biped::rcg::InverseDynamics::zeroExtForces(Force::Zero());
+const Biped::rcg::InverseDynamics::ExtForces
+    Biped::rcg::InverseDynamics::zeroExtForces(Force::Zero());
 
-biped::rcg::InverseDynamics::InverseDynamics(InertiaProperties& inertia, MotionTransforms& transforms) :
+Biped::rcg::InverseDynamics::InverseDynamics(InertiaProperties& inertia, MotionTransforms& transforms) :
     inertiaProps( & inertia ),
     xm( & transforms ),
     L_hip_I(inertiaProps->getTensor_L_hip() ),
@@ -41,7 +41,7 @@ biped::rcg::InverseDynamics::InverseDynamics(InertiaProperties& inertia, MotionT
     vcross.setZero();
 }
 
-void biped::rcg::InverseDynamics::id(
+void Biped::rcg::InverseDynamics::id(
     JointState& jForces, Acceleration& trunk_a,
     const Acceleration& g, const Velocity& trunk_v,
     const JointState& qd, const JointState& qdd,
@@ -184,7 +184,7 @@ void biped::rcg::InverseDynamics::id(
 }
 
 
-void biped::rcg::InverseDynamics::G_terms_fully_actuated(
+void Biped::rcg::InverseDynamics::G_terms_fully_actuated(
     Force& baseWrench, JointState& jForces,
     const Acceleration& g)
 {
@@ -216,7 +216,7 @@ void biped::rcg::InverseDynamics::G_terms_fully_actuated(
     baseWrench = trunk_f;
 }
 
-void biped::rcg::InverseDynamics::C_terms_fully_actuated(
+void Biped::rcg::InverseDynamics::C_terms_fully_actuated(
     Force& baseWrench, JointState& jForces,
     const Velocity& trunk_v, const JointState& qd)
 {
@@ -270,7 +270,7 @@ void biped::rcg::InverseDynamics::C_terms_fully_actuated(
     baseWrench = trunk_f;
 }
 
-void biped::rcg::InverseDynamics::id_fully_actuated(
+void Biped::rcg::InverseDynamics::id_fully_actuated(
         Force& baseWrench, JointState& jForces,
         const Acceleration& g, const Velocity& trunk_v, const Acceleration& baseAccel,
         const JointState& qd, const JointState& qdd, const ExtForces& fext)
@@ -353,7 +353,7 @@ void biped::rcg::InverseDynamics::id_fully_actuated(
 }
 
 
-void biped::rcg::InverseDynamics::secondPass_fullyActuated(JointState& jForces)
+void Biped::rcg::InverseDynamics::secondPass_fullyActuated(JointState& jForces)
 {
     // Link 'R_shin'
     jForces(R_KFE) = R_shin_f(iit::rbd::AZ);

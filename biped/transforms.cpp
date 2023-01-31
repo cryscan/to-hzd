@@ -1,6 +1,6 @@
 #include "transforms.h"
 
-using namespace biped::rcg;
+using namespace Biped::rcg;
 
 // Constructors
 

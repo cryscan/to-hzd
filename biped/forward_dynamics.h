@@ -10,7 +10,7 @@
 #include "inertia_properties.h"
 #include "link_data_map.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 /**

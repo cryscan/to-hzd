@@ -6,7 +6,7 @@
 #include <iit/rbd/InertiaMatrix.h>
 #include <iit/robcogen/scalar/cppad.h>
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 typedef typename iit::robcogen::CppADDoubleTraits ScalarTraits;

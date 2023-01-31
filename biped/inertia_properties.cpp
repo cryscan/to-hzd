@@ -3,7 +3,7 @@
 using namespace std;
 using namespace iit::rbd;
 
-biped::rcg::InertiaProperties::InertiaProperties()
+Biped::rcg::InertiaProperties::InertiaProperties()
 {
     com_trunk = Vector3(0.0,0.0,0.0);
     tensor_trunk.fill(
@@ -50,7 +50,7 @@ biped::rcg::InertiaProperties::InertiaProperties()
 }
 
 
-void biped::rcg::InertiaProperties::updateParameters(const RuntimeInertiaParams& fresh)
+void Biped::rcg::InertiaProperties::updateParameters(const RuntimeInertiaParams& fresh)
 {
     this-> params = fresh;
 }

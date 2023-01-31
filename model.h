@@ -17,25 +17,36 @@
 
 namespace to {
     struct Model {
-        biped::rcg::HomogeneousTransforms homogeneous_transforms;
-        biped::rcg::MotionTransforms motion_transforms;
-        biped::rcg::ForceTransforms force_transforms;
-        biped::rcg::Jacobians jacobians;
-        biped::rcg::InertiaProperties inertia_properties;
+        Biped::rcg::HomogeneousTransforms homogeneous_transforms;
+        Biped::rcg::MotionTransforms motion_transforms;
+        Biped::rcg::ForceTransforms force_transforms;
+        Biped::rcg::Jacobians jacobians;
+        Biped::rcg::InertiaProperties inertia_properties;
 
-        biped::rcg::InverseDynamics inverse_dynamics;
-        biped::rcg::JSIM jsim;
+        Biped::rcg::InverseDynamics inverse_dynamics;
+        Biped::rcg::JSIM jsim;
 
         Model()
             : inverse_dynamics(inertia_properties, motion_transforms),
               jsim(inertia_properties, force_transforms) {
         }
     };
+
     struct State {
-        biped::rcg::JointState q, qd, qdd;
-        Eigen::Quaternion<biped::rcg::Scalar> r;
-        Eigen::Vector3<biped::rcg::Scalar> rd, rdd;
-        Eigen::Vector3<biped::rcg::Scalar> p, pd, pdd;
+        Biped::rcg::JointState q, qd, qdd;
+        Eigen::Quaternion<Biped::rcg::Scalar> r;
+        Eigen::Vector3<Biped::rcg::Scalar> rd, rdd;
+        Eigen::Vector3<Biped::rcg::Scalar> p, pd, pdd;
+    };
+
+    class Trajectory {
+    public:
+        using Scalar = Biped::rcg::Scalar;
+
+    private:
+        Spline<Scalar, RotationAdaptor<Scalar>> base_angular;
+        Spline<Scalar, Polynomial<Scalar>> base_linear;
+        Spline<Scalar, Polynomial<Scalar>> joint_state;
     };
 
 }// namespace to

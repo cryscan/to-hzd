@@ -10,7 +10,7 @@
 #include "transforms.h"
 #include "link_data_map.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 /**

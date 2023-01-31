@@ -180,7 +180,7 @@ namespace to {
             : nodes{std::move(nodes)},
               dt{dt},
               D{d} {
-            update_polynomials();
+            make_polynomials();
         }
 
         [[nodiscard]] Scalar total_time() const {
@@ -195,9 +195,15 @@ namespace to {
             return t - polynomial_id(t) * dt;
         }
 
-        void update_nodes(const Nodes& xs) {
-            nodes = xs;
+        void update_nodes(const Nodes& nodes_) {
+            assert(nodes.size() == nodes_.size());
+            nodes = nodes_;
             update_polynomials();
+        }
+
+        void update_node_at(auto i, const Node<Scalar>& node) {
+            nodes[i] = node;
+            update_polynomials_at_node(i);
         }
 
         auto eval(const Scalar& t, auto n) {
@@ -210,7 +216,7 @@ namespace to {
         Polynomials polynomials;
         const Scalar dt;
 
-        void update_polynomials() {
+        void make_polynomials() {
             assert(nodes.size() >= 2);
 
             polynomials.clear();
@@ -219,6 +225,19 @@ namespace to {
                 polynomials.emplace_back(dt, D);
                 polynomials.back().update_nodes(nodes[i], nodes[i + 1]);
             }
+        }
+
+        void update_polynomials() {
+            for (int i = 0; i < nodes.size() - 1; ++i) {
+                polynomials[i].update_nodes(nodes[i], nodes[i + 1]);
+            }
+        }
+
+        void update_polynomials_at_node(auto i) {
+            if (i < nodes.size())
+                polynomials[i].update_nodes(nodes[i], nodes[i + 1]);
+            if (i > 0)
+                polynomials[i - 1].update_nodes(nodes[i - 1], nodes[i]);
         }
     };
 }// namespace to

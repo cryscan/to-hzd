@@ -3,7 +3,7 @@
 
 #include "declarations.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 /**

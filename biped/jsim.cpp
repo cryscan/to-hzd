@@ -6,7 +6,7 @@
 using namespace iit::rbd;
 
 //Implementation of default constructor
-biped::rcg::JSIM::JSIM(InertiaProperties& inertiaProperties, ForceTransforms& forceTransforms) :
+Biped::rcg::JSIM::JSIM(InertiaProperties& inertiaProperties, ForceTransforms& forceTransforms) :
     linkInertias(inertiaProperties),
     frcTransf( &forceTransforms ),
     L_shin_Ic(linkInertias.getTensor_L_shin()),
@@ -19,7 +19,7 @@ biped::rcg::JSIM::JSIM(InertiaProperties& inertiaProperties, ForceTransforms& fo
 #define DATA operator()
 #define Fcol(j) (block<6,1>(0,(j)+6))
 #define F(i,j) DATA((i),(j)+6)
-const biped::rcg::JSIM& biped::rcg::JSIM::update(const JointState& state) {
+const Biped::rcg::JSIM& Biped::rcg::JSIM::update(const JointState& state) {
 
     // Precomputes only once the coordinate transforms:
     frcTransf -> fr_R_thigh_X_fr_R_shin(state);
@@ -120,7 +120,7 @@ const biped::rcg::JSIM& biped::rcg::JSIM::update(const JointState& state) {
 #undef DATA
 #undef F
 
-void biped::rcg::JSIM::computeL() {
+void Biped::rcg::JSIM::computeL() {
     L = this -> triangularView<Eigen::Lower>();
     // Joint R_KFE, index 5 :
     L(5, 5) = ScalarTraits::sqrt(L(5, 5));
@@ -156,7 +156,7 @@ void biped::rcg::JSIM::computeL() {
     
 }
 
-void biped::rcg::JSIM::computeInverse() {
+void Biped::rcg::JSIM::computeInverse() {
     computeLInverse();
 
     inverse(0, 0) =  + (Linv(0, 0) * Linv(0, 0));
@@ -179,7 +179,7 @@ void biped::rcg::JSIM::computeInverse() {
     inverse(3, 5) = inverse(5, 3);
 }
 
-void biped::rcg::JSIM::computeLInverse() {
+void Biped::rcg::JSIM::computeLInverse() {
     //assumes L has been computed already
     Linv(0, 0) = 1 / L(0, 0);
     Linv(1, 1) = 1 / L(1, 1);

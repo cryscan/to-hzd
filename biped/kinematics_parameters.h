@@ -3,7 +3,7 @@
 
 #include "rbd_types.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 struct Params_lengths {

@@ -6,7 +6,7 @@
 #include "model_constants.h"
 #include "kinematics_parameters.h"
 
-namespace biped {
+namespace Biped {
 namespace rcg {
 
 struct Parameters

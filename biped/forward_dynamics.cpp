@@ -6,10 +6,10 @@
 using namespace iit::rbd;
 
 // Initialization of static-const data
-const biped::rcg::ForwardDynamics::ExtForces
-    biped::rcg::ForwardDynamics::zeroExtForces(Force::Zero());
+const Biped::rcg::ForwardDynamics::ExtForces
+    Biped::rcg::ForwardDynamics::zeroExtForces(Force::Zero());
 
-biped::rcg::ForwardDynamics::ForwardDynamics(InertiaProperties& inertia, MotionTransforms& transforms) :
+Biped::rcg::ForwardDynamics::ForwardDynamics(InertiaProperties& inertia, MotionTransforms& transforms) :
     inertiaProps( & inertia ),
     motionTransforms( & transforms )
 {
@@ -31,7 +31,7 @@ biped::rcg::ForwardDynamics::ForwardDynamics(InertiaProperties& inertia, MotionT
 
 }
 
-void biped::rcg::ForwardDynamics::fd(
+void Biped::rcg::ForwardDynamics::fd(
     JointState& qdd,
     Acceleration& trunk_a,
     const Velocity& trunk_v,
