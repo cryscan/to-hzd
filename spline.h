@@ -15,13 +15,6 @@
 #include "forward.h"
 
 namespace to {
-    template<typename Polynomial, typename Scalar, typename Node>
-    concept PolynomialType = requires(Polynomial& p, const Node& node, const Scalar& t, int n) {
-                                 { p.D } -> std::convertible_to<int>;
-                                 { p.update_nodes(node, node) };
-                                 { p.eval(t, n) } -> std::convertible_to<Eigen::VectorX<Scalar>>;
-                             };
-
     template<typename Scalar>
     struct Node {
         Eigen::VectorX<Scalar> x;
@@ -169,7 +162,7 @@ namespace to {
         }
     };
 
-    template<typename Scalar, PolynomialType<Scalar, Node<Scalar>> Polynomial>
+    template<typename Scalar, PolynomialType<Scalar> Polynomial>
     class Spline {
     public:
         using Nodes = std::vector<Node<Scalar>>;
