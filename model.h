@@ -26,32 +26,20 @@ namespace to {
 
         Biped::rcg::JointState q, qd, qdd;
         Eigen::Quaternion<Scalar> r;
-        Eigen::Vector3<Scalar> rd, rdd;   // Base angular velocity/acceleration (inertial frame)
+        Eigen::Vector3<Scalar> rd, rdd;   // Base angular velocity/acceleration (body frame)
         Eigen::Vector3<Scalar> p, pd, pdd;// Base linear pose/velocity/acceleration (inertial frame)
 
         [[nodiscard]] auto velocity() const {
             Eigen::Vector<Scalar, state_dim> xd;
-            xd << rd, pd, qd;
-            return xd;
-        }
-
-        [[nodiscard]] auto body_velocity() const {
-            Eigen::Vector<Scalar, state_dim> xd;
-            auto m = r.toRotationMatrix().transpose();
-            xd << m * rd, m * pd, qd;
+            auto m = r.inverse().toRotationMatrix();
+            xd << rd, m * pd, qd;
             return xd;
         }
 
         [[nodiscard]] auto acceleration() const {
             Eigen::Vector<Scalar, state_dim> xdd;
-            xdd << rdd, pdd, qdd;
-            return xdd;
-        }
-
-        [[nodiscard]] auto body_acceleration() const {
-            Eigen::Vector<Scalar, state_dim> xdd;
-            auto m = r.toRotationMatrix().transpose();
-            xdd << m * rdd, m * pdd, qdd;
+            auto m = r.inverse().toRotationMatrix();
+            xdd << rdd, m * pdd, qdd;
             return xdd;
         }
     };
@@ -92,7 +80,6 @@ namespace to {
             Eigen::Matrix3<Scalar> r = state.r.toRotationMatrix();
             jacobian.block<3, 3>(0, 0) = r;                                 // Base angular -> EE angular
             jacobian.block<3, 3>(3, 0) = -r * px;                           // Base angular -> EE linear
-            jacobian.block<3, 3>(0, 3) = Eigen::Matrix3<Scalar>::Zero();    // Base linear  -> EE angular
             jacobian.block<3, 3>(3, 3) = Eigen::Matrix3<Scalar>::Identity();// Base linear  -> EE linear
             jacobian.block<3, joint_space_dim>(0, 6) = r * joint_space_jacobian.topRows<3>();
             jacobian.block<3, joint_space_dim>(3, 6) = r * joint_space_jacobian.bottomRows<3>();

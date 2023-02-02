@@ -91,7 +91,7 @@ namespace to {
         explicit RotationAdaptor(const Scalar& dt, int d = D)
             : polynomial(dt, D) {
             assert(d == D);
-            Eigen::VectorX<ADScalar> t(1), x(4 * D), q(4), w(3);
+            Eigen::VectorX<ADScalar> t(1), x(4 * D), q(4), u(3);
 
             CppAD::Independent(t, x);
             auto fun_ad_p = polynomial.fun_p.base2ad();
@@ -107,14 +107,14 @@ namespace to {
             auto fun_ad_q = fun_q.base2ad();
             fun_ad_q.new_dynamic(x);
 
-            Eigen::Vector4<ADScalar> q4 = fun_ad_q.Forward(0, t);
-            Eigen::Vector4<ADScalar> qd = fun_ad_q.Jacobian(t);
-            Eigen::Quaternion<ADScalar> r{q4}, rd{qd};
+            Eigen::Quaternion<ADScalar> r = Eigen::Vector4<ADScalar>(fun_ad_q.Forward(0, t));
+            Eigen::Quaternion<ADScalar> rd = Eigen::Vector4<ADScalar>(fun_ad_q.Jacobian(t));
 
+            // Body angular velocity
             ADScalar _2{2.0};
-            w << _2 * (rd * r.inverse()).coeffs().tail(3);
-            fun_w.Dependent(w);
-            fun_w.optimize("no_compare_op");
+            u << _2 * (r.inverse() * rd).coeffs().tail(3);
+            fun_u.Dependent(u);
+            fun_u.optimize("no_compare_op");
         }
 
         void update_nodes(const Node<Scalar>& head, const Node<Scalar>& tail) {
@@ -123,15 +123,15 @@ namespace to {
             Eigen::VectorX<Scalar> x(4 * D);
             x << head.x, head.xd, tail.x, tail.xd;
             fun_q.new_dynamic(x);
-            fun_w.new_dynamic(x);
+            fun_u.new_dynamic(x);
         }
 
         Eigen::VectorX<Scalar> eval(const Scalar& t, int n) {
             Eigen::VectorX<Scalar> vt = Eigen::Vector<Scalar, 1>{t};
             switch (n) {
                 case 0: return fun_q.Forward(0, vt);
-                case 1: return fun_w.Forward(0, vt);
-                case 2: return fun_w.Jacobian(vt);
+                case 1: return fun_u.Forward(0, vt);
+                case 2: return fun_u.Jacobian(vt);
                 default: assert(false);
             }
         }
@@ -143,7 +143,7 @@ namespace to {
 
     private:
         Polynomial<Scalar> polynomial;
-        CppAD::ADFun<Scalar> fun_q, fun_w;
+        CppAD::ADFun<Scalar> fun_q, fun_u;
     };
 
     template<typename Scalar, PolynomialType<Scalar> Polynomial>
