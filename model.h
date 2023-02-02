@@ -14,6 +14,7 @@
 
 #include "forward.h"
 #include "spline.h"
+#include "utils.h"
 
 namespace to {
     static constexpr int joint_space_dim = Biped::rcg::JointSpaceDimension;
@@ -21,20 +22,36 @@ namespace to {
     static constexpr int state_dim = 6 + joint_space_dim;
 
     struct State {
-        Biped::rcg::JointState q, qd, qdd;
-        Eigen::Quaternion<Biped::rcg::Scalar> r;
-        Eigen::Vector3<Biped::rcg::Scalar> rd, rdd;
-        Eigen::Vector3<Biped::rcg::Scalar> p, pd, pdd;
+        using Scalar = Biped::rcg::Scalar;
 
-        [[nodiscard]] Eigen::Vector<Biped::rcg::Scalar, state_dim> velocity() const {
-            Eigen::Vector<Biped::rcg::Scalar, state_dim> xd;
+        Biped::rcg::JointState q, qd, qdd;
+        Eigen::Quaternion<Scalar> r;
+        Eigen::Vector3<Scalar> rd, rdd;   // Base angular velocity/acceleration (inertial frame)
+        Eigen::Vector3<Scalar> p, pd, pdd;// Base linear pose/velocity/acceleration (inertial frame)
+
+        [[nodiscard]] auto velocity() const {
+            Eigen::Vector<Scalar, state_dim> xd;
             xd << rd, pd, qd;
             return xd;
         }
 
-        [[nodiscard]] Eigen::Vector<Biped::rcg::Scalar, state_dim> acceleration() const {
-            Eigen::Vector<Biped::rcg::Scalar, state_dim> xdd;
+        [[nodiscard]] auto body_velocity() const {
+            Eigen::Vector<Scalar, state_dim> xd;
+            auto m = r.toRotationMatrix().transpose();
+            xd << m * rd, m * pd, qd;
+            return xd;
+        }
+
+        [[nodiscard]] auto acceleration() const {
+            Eigen::Vector<Scalar, state_dim> xdd;
             xdd << rdd, pdd, qdd;
+            return xdd;
+        }
+
+        [[nodiscard]] auto body_acceleration() const {
+            Eigen::Vector<Scalar, state_dim> xdd;
+            auto m = r.toRotationMatrix().transpose();
+            xdd << m * rdd, m * pdd, qdd;
             return xdd;
         }
     };
@@ -55,23 +72,22 @@ namespace to {
 
         Eigen::Matrix<Scalar, 6, state_dim> foot_jacobian(const State& state, Side side) {
             Eigen::Matrix<Scalar, 6, joint_space_dim> joint_space_jacobian = Eigen::Matrix<Scalar, 6, joint_space_dim>::Zero();
-            Eigen::Vector4<Scalar> p;
+            Eigen::Vector4<Scalar> p{0, 0, 0, 1};
             switch (side) {
                 case Side::LEFT:
                     joint_space_jacobian.leftCols<3>() << jacobians.fr_trunk_J_L_foot(state.q);
-                    p << homogeneous_transforms.fr_trunk_X_L_foot * Eigen::Vector4<Scalar>{0, 0, 0, 1};
+                    p = homogeneous_transforms.fr_trunk_X_L_foot * p;
                     break;
                 case Side::RIGHT:
                     joint_space_jacobian.rightCols<3>() << jacobians.fr_trunk_J_R_foot(state.q);
-                    p << homogeneous_transforms.fr_trunk_X_R_foot * Eigen::Vector4<Scalar>{0, 0, 0, 1};
+                    p = homogeneous_transforms.fr_trunk_X_R_foot * p;
                     break;
             }
 
-            Eigen::Matrix3<Scalar> px;
-            px << 0, -p(2), p(1),
-                p(2), 0, -p(0),
-                -p(1), p(0), 0;
+            auto px = hat<Scalar>(p.head<3>());
 
+            // J =  [   R       ,   0   ,   R Jr    ]
+            //      [   -R px   ,   I   ,   R Jp    ]
             Eigen::Matrix<Scalar, 6, state_dim> jacobian = Eigen::Matrix<Scalar, 6, state_dim>::Zero();
             Eigen::Matrix3<Scalar> r = state.r.toRotationMatrix();
             jacobian.block<3, 3>(0, 0) = r;                                 // Base angular -> EE angular

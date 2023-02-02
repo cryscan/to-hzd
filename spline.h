@@ -13,6 +13,7 @@
 #include <cppad/cppad.hpp>
 
 #include "forward.h"
+#include "utils.h"
 
 namespace to {
     template<typename Scalar>
@@ -97,7 +98,7 @@ namespace to {
             fun_ad_p.new_dynamic(x);
 
             Eigen::Vector3<ADScalar> v = fun_ad_p.Forward(0, t);
-            q << exp(v);
+            q << exp(v).coeffs();
 
             fun_q.Dependent(q);
             fun_q.optimize("no_compare_op");
@@ -143,23 +144,6 @@ namespace to {
     private:
         Polynomial<Scalar> polynomial;
         CppAD::ADFun<Scalar> fun_q, fun_w;
-
-        // Exponential map that maps R^3 to S^3.
-        // Reference: https://www.cs.cmu.edu/~spiff/moedit99/expmap.pdf
-        static Eigen::Vector4<ADScalar> exp(const Eigen::Vector3<ADScalar> v) {
-            ADScalar _1_2{0.5}, _1{1.0}, _8{8.0}, _48{48.0}, _384{384.0};
-            ADScalar eps{0.00012207};
-
-            ADScalar t2 = v.squaredNorm();
-            ADScalar t4 = t2 * t2;
-            ADScalar t = CppAD::sqrt(t2);
-            ADScalar st = CppAD::sin(_1_2 * t);
-            ADScalar ct = CppAD::CondExpLe(t, eps, _1 - t2 / _8 + t4 / _384, CppAD::cos(_1_2 * t));
-            ADScalar sc = CppAD::CondExpLe(t, eps, _1_2 + t2 / _48, st / t);
-
-            Eigen::Vector3<ADScalar> sv = sc * v;
-            return {sv(0), sv(1), sv(2), ct};
-        }
     };
 
     template<typename Scalar, PolynomialType<Scalar> Polynomial>
