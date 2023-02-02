@@ -75,12 +75,12 @@ namespace to {
             auto px = hat<Scalar>(p.head<3>());
 
             // J =  [   R       ,   0   ,   R Jr    ]
-            //      [   -R px   ,   I   ,   R Jp    ]
+            //      [   -R px   ,   R   ,   R Jp    ]
             Eigen::Matrix<Scalar, 6, state_dim> jacobian = Eigen::Matrix<Scalar, 6, state_dim>::Zero();
             Eigen::Matrix3<Scalar> r = state.r.toRotationMatrix();
-            jacobian.block<3, 3>(0, 0) = r;                                 // Base angular -> EE angular
-            jacobian.block<3, 3>(3, 0) = -r * px;                           // Base angular -> EE linear
-            jacobian.block<3, 3>(3, 3) = Eigen::Matrix3<Scalar>::Identity();// Base linear  -> EE linear
+            jacobian.block<3, 3>(0, 0) = r;      // Base angular -> EE angular
+            jacobian.block<3, 3>(3, 0) = -r * px;// Base angular -> EE linear
+            jacobian.block<3, 3>(3, 3) = r;      // Base linear  -> EE linear
             jacobian.block<3, joint_space_dim>(0, 6) = r * joint_space_jacobian.topRows<3>();
             jacobian.block<3, joint_space_dim>(3, 6) = r * joint_space_jacobian.bottomRows<3>();
 
