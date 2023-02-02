@@ -107,8 +107,8 @@ namespace to {
             auto fun_ad_q = fun_q.base2ad();
             fun_ad_q.new_dynamic(x);
 
-            Eigen::Quaternion<ADScalar> r = Eigen::Vector4<ADScalar>(fun_ad_q.Forward(0, t));
-            Eigen::Quaternion<ADScalar> rd = Eigen::Vector4<ADScalar>(fun_ad_q.Jacobian(t));
+            Eigen::Quaternion<ADScalar> r(Eigen::Vector4<ADScalar>(fun_ad_q.Forward(0, t)));
+            Eigen::Quaternion<ADScalar> rd(Eigen::Vector4<ADScalar>(fun_ad_q.Jacobian(t)));
 
             // Body angular velocity
             ADScalar _2{2.0};
