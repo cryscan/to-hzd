@@ -26,30 +26,42 @@ namespace to {
 
         Biped::rcg::JointState q, qd, qdd;
         Eigen::Quaternion<Scalar> r;
-        Eigen::Vector3<Scalar> rd, rdd;   // Base angular velocity/acceleration (body frame)
+        Eigen::Vector3<Scalar> u, ud;     // Base angular velocity/acceleration (body frame)
         Eigen::Vector3<Scalar> p, pd, pdd;// Base linear pose/velocity/acceleration (inertial frame)
 
-        [[nodiscard]] auto base_velocity() const {
+        [[nodiscard]] auto state_vector() const {
+            Eigen::Vector<Scalar, pose_state_dim> x;
+            x << r.coeffs(), p, q;
+            return x;
+        }
+
+        [[nodiscard]] auto base_body_velocity() const {
             Biped::rcg::Velocity xd;
-            auto m = r.inverse().toRotationMatrix();
-            xd << rd, m * pd;
+            auto rot = r.inverse().toRotationMatrix();
+            xd << u, rot * pd;
             return xd;
         }
 
-        [[nodiscard]] auto velocity() const {
+        [[nodiscard]] auto body_velocity() const {
             Eigen::Vector<Scalar, state_dim> xd;
-            xd << base_velocity(), qd;
+            xd << base_body_velocity(), qd;
+            return xd;
+        }
+
+        [[nodiscard]] auto state_derivative() const {
+            Eigen::Vector<Scalar, pose_state_dim> xd;
+            xd << body_to_quaternion_derivative(r, u).coeffs(), pd, qd;
             return xd;
         }
 
         [[nodiscard]] auto base_acceleration() const {
             Biped::rcg::Acceleration xdd;
-            auto m = r.inverse().toRotationMatrix();
-            xdd << rdd, m * pdd;
+            auto rot = r.inverse().toRotationMatrix();
+            xdd << ud, rot * pdd;
             return xdd;
         }
 
-        [[nodiscard]] auto acceleration() const {
+        [[nodiscard]] auto body_acceleration() const {
             Eigen::Vector<Scalar, state_dim> xdd;
             xdd << base_acceleration(), qdd;
             return xdd;
@@ -67,22 +79,58 @@ namespace to {
               jsim(inertia_properties, force_transforms) {
         }
 
-        enum class Side {
-            LEFT,
+        enum Side {
+            LEFT = 0,
             RIGHT
         };
 
+        Eigen::Vector<Scalar, state_dim> dynamics_constraint(
+            const State& state,
+            const Biped::rcg::JointState& control,
+            const Biped::rcg::Force& contact_force,
+            Side contact_side) {
+            using namespace Biped::rcg;
+            Eigen::Vector<Scalar, state_dim> u;
+
+            u << Force::Zero(), control;
+            auto h = nonlinear_terms(state);
+            auto contact_jacobian = foot_jacobian(state, contact_side);
+
+            return jsim(state.q) * state.body_acceleration() + h - contact_jacobian.transpose() * contact_force - u;
+        }
+
+        Biped::rcg::Force contact_constraint(
+            const State& state,
+            Side contact_side) {
+            using namespace Biped::rcg;
+
+            auto contact_jacobian = foot_jacobian(state, contact_side);
+            auto contact_jacobian_derivative = foot_jacobian_time_derivative(state, contact_side);
+
+            return contact_jacobian * state.body_acceleration() + contact_jacobian_derivative * state.state_derivative();
+        }
+
+    private:
+        Biped::rcg::HomogeneousTransforms homogeneous_transforms;
+        Biped::rcg::MotionTransforms motion_transforms;
+        Biped::rcg::ForceTransforms force_transforms;
+        Biped::rcg::Jacobians jacobians;
+        Biped::rcg::InertiaProperties inertia_properties;
+
+        Biped::rcg::InverseDynamics inverse_dynamics;
+        Biped::rcg::JSIM jsim;
+
         Eigen::Matrix<Scalar, 6, state_dim> foot_jacobian(const State& state, Side side) {
-            Eigen::Matrix<Scalar, 6, joint_space_dim> joint_space_jacobian = Eigen::Matrix<Scalar, 6, joint_space_dim>::Zero();
+            Eigen::Matrix<Scalar, 6, joint_space_dim> joint_space_jacobian = decltype(joint_space_jacobian)::Zero();
             Eigen::Vector4<Scalar> p{0, 0, 0, 1};
             switch (side) {
                 case Side::LEFT:
                     joint_space_jacobian.leftCols<3>() << jacobians.fr_trunk_J_L_foot(state.q);
-                    p = homogeneous_transforms.fr_trunk_X_L_foot * p;
+                    p = homogeneous_transforms.fr_trunk_X_L_foot(state.q) * p;
                     break;
                 case Side::RIGHT:
                     joint_space_jacobian.rightCols<3>() << jacobians.fr_trunk_J_R_foot(state.q);
-                    p = homogeneous_transforms.fr_trunk_X_R_foot * p;
+                    p = homogeneous_transforms.fr_trunk_X_R_foot(state.q) * p;
                     break;
             }
 
@@ -101,6 +149,17 @@ namespace to {
             return jacobian;
         }
 
+        template<typename Vector>
+        Eigen::Matrix<Scalar, 6, state_dim> foot_jacobian(const Vector& x, Side side) {
+            State state;
+
+            state.r = Eigen::Quaternion<Scalar>(x(3), x(0), x(1), x(2));
+            state.p = x.segment(4, 3);
+            state.q = x.tail(joint_space_dim);
+
+            return foot_jacobian(state, side);
+        }
+
         Eigen::Vector<Scalar, state_dim> nonlinear_terms(const State& state) {
             using namespace Biped::rcg;
             Eigen::Vector<Scalar, state_dim> h;
@@ -112,7 +171,7 @@ namespace to {
                 h_base,
                 h_joint,
                 gravity,
-                state.base_velocity(),
+                state.base_body_velocity(),
                 Acceleration::Zero(),
                 state.q,
                 state.qd,
@@ -122,59 +181,28 @@ namespace to {
             return h;
         }
 
-        Eigen::Vector<Scalar, state_dim> dynamics_constraint(
-            const State& state,
-            const Biped::rcg::JointState& control,
-            const Biped::rcg::Force& contact_force,
-            Side contact_side) {
-            using namespace Biped::rcg;
-            Eigen::Vector<Scalar, state_dim> u;
+        Eigen::Matrix<Scalar, 6, pose_state_dim> foot_jacobian_time_derivative(const State& state, Side side) {
+            Eigen::VectorX<Scalar> x(pose_state_dim), y(6);
 
-            u << Force::Zero(), control;
-            auto h = nonlinear_terms(state);
-            auto contact_jacobian = foot_jacobian(state, contact_side);
+            CppAD::Independent(x);
 
-            return jsim(state.q) * state.acceleration() + h - contact_jacobian.transpose() * contact_force - u;
+            auto contact_jacobian = foot_jacobian(x, side);
+            y << contact_jacobian * state.body_velocity();
+
+            CppAD::ADFun<double> fun;
+            fun.Dependent(x, y);
+            auto fun_ad = fun.base2ad();
+
+            Eigen::Matrix<Scalar, 6, pose_state_dim> jacobian_derivative;
+            x << state.state_vector();
+            jacobian_derivative << fun_ad.Jacobian(x);
+            return jacobian_derivative;
         }
-
-        Biped::rcg::Force contact_constraint(
-            const State& state,
-            const Biped::rcg::JointState& control,
-            const Biped::rcg::Force& contact_force,
-            Side contact_side) {
-            using namespace Biped::rcg;
-            Eigen::Vector<Scalar, state_dim> u;
-
-            u << Force::Zero(), control;
-            auto h = nonlinear_terms(state);
-            auto contact_jacobian = foot_jacobian(state, contact_side);
-
-            jsim.update(state.q);
-            jsim.computeL();
-            jsim.computeInverse();
-            Eigen::Matrix<Scalar, state_dim, state_dim> inv_m;
-
-            Eigen::Matrix<Scalar, 6, 6> contact_inertia = contact_jacobian * inv_m * contact_jacobian.transpose();
-            Force b = contact_jacobian * state.acceleration();
-
-            return contact_inertia * contact_force - b - contact_jacobian * inv_m * (h - u);
-        }
-
-    private:
-        Biped::rcg::HomogeneousTransforms homogeneous_transforms;
-        Biped::rcg::MotionTransforms motion_transforms;
-        Biped::rcg::ForceTransforms force_transforms;
-        Biped::rcg::Jacobians jacobians;
-        Biped::rcg::InertiaProperties inertia_properties;
-
-        Biped::rcg::InverseDynamics inverse_dynamics;
-        Biped::rcg::JSIM jsim;
     };
 
     class Trajectory {
     public:
         using Scalar = Biped::rcg::Scalar;
-
 
     private:
         Spline<Scalar, RotationAdaptor<Scalar>> base_angular;

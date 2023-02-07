@@ -27,6 +27,25 @@ namespace to {
         return {ct, sv(0), sv(1), sv(2)};
     }
 
+    template<typename Scalar>
+    Eigen::Vector3<Scalar> to_body_angular_velocity(
+        const Eigen::Quaternion<Scalar> r,
+        const Eigen::Quaternion<Scalar> rd) {
+        Scalar _2{2.0};
+        return _2 * (r.inverse() * rd).coeffs().tail(3);
+    }
+
+    template<typename Scalar, typename Vector>
+    Eigen::Quaternion<Scalar> body_to_quaternion_derivative(
+        const Eigen::Quaternion<Scalar> r,
+        const Vector& u) {
+        Scalar _0{0.0}, _1_2{0.5};
+        Eigen::Quaternion<Scalar> v{_0, u(0), u(1), u(2)};
+        Eigen::Vector4<Scalar> rd = _1_2 * (r * v).coeffs();
+        Eigen::Quaternion<Scalar> xd(rd);
+        return xd;
+    }
+
     // Raising a vector to a skew-symmetric matrix.
     template<typename Scalar, typename Vector>
     Eigen::Matrix3<Scalar> hat(const Vector& v) {

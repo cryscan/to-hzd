@@ -107,12 +107,11 @@ namespace to {
             auto fun_ad_q = fun_q.base2ad();
             fun_ad_q.new_dynamic(x);
 
+            // Body angular velocity
             Eigen::Quaternion<ADScalar> r(Eigen::Vector4<ADScalar>(fun_ad_q.Forward(0, t)));
             Eigen::Quaternion<ADScalar> rd(Eigen::Vector4<ADScalar>(fun_ad_q.Jacobian(t)));
+            u << to_body_angular_velocity(r, rd);
 
-            // Body angular velocity
-            ADScalar _2{2.0};
-            u << _2 * (r.inverse() * rd).coeffs().tail(3);
             fun_u.Dependent(u);
             fun_u.optimize("no_compare_op");
         }
