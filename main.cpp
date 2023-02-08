@@ -43,7 +43,7 @@ int main() {
             {Eigen::Vector3<Scalar>{0.0, 0.0, M_PI_2}, Eigen::Vector3<Scalar>::Zero()},
         };
 
-        to::Spline<Scalar, to::RotationAdaptor<Scalar>> spline(nodes, 0.1, 3);
+        to::Spline<Scalar, to::RotationAdaptor<Scalar>> spline(std::make_shared<decltype(nodes)>(nodes), 0.1, 3);
 
         t = Scalar{0.3};
 

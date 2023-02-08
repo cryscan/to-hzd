@@ -149,13 +149,15 @@ namespace to {
     class Spline {
     public:
         using Nodes = std::vector<Node<Scalar>>;
+        using NodesRef = std::shared_ptr<Nodes>;
         using Polynomials = std::vector<Polynomial>;
         const int D;
 
-        Spline(Nodes nodes, const Scalar& dt, int d)
+        Spline(NodesRef nodes, const Scalar& dt, int d)
             : nodes{std::move(nodes)},
               dt{dt},
               D{d} {
+            assert(this->nodes);
             make_polynomials();
         }
 
@@ -171,14 +173,14 @@ namespace to {
             return t - polynomial_id(t) * dt;
         }
 
-        void update_nodes(const Nodes& nodes_) {
-            assert(nodes.size() == nodes_.size());
-            nodes = nodes_;
-            update_polynomials();
+        void update_nodes() {
+            assert(nodes);
+            assert(nodes->size() >= 2);
+            nodes->size() == polynomials.size() ? update_polynomials() : make_polynomials();
         }
 
         void update_node_at(auto i, const Node<Scalar>& node) {
-            nodes[i] = node;
+            nodes->at(i) = node;
             update_polynomials_at_node(i);
         }
 
@@ -188,32 +190,30 @@ namespace to {
         }
 
     private:
-        Nodes nodes;
+        NodesRef nodes;
         Polynomials polynomials;
         const Scalar dt;
 
         void make_polynomials() {
-            assert(nodes.size() >= 2);
-
             polynomials.clear();
-            polynomials.reserve(nodes.size() - 1);
-            for (int i = 0; i < nodes.size() - 1; ++i) {
+            polynomials.reserve(nodes->size() - 1);
+            for (int i = 0; i < nodes->size() - 1; ++i) {
                 polynomials.emplace_back(dt, D);
-                polynomials.back().update_nodes(nodes[i], nodes[i + 1]);
+                polynomials.back().update_nodes(nodes->at(i), nodes->at(i + 1));
             }
         }
 
         void update_polynomials() {
-            for (int i = 0; i < nodes.size() - 1; ++i) {
-                polynomials[i].update_nodes(nodes[i], nodes[i + 1]);
+            for (int i = 0; i < nodes->size() - 1; ++i) {
+                polynomials[i].update_nodes(nodes->at(i), nodes->at(i + 1));
             }
         }
 
         void update_polynomials_at_node(auto i) {
-            if (i < nodes.size())
-                polynomials[i].update_nodes(nodes[i], nodes[i + 1]);
+            if (i < nodes->size())
+                polynomials[i].update_nodes(nodes->at(i), nodes->at(i + 1));
             if (i > 0)
-                polynomials[i - 1].update_nodes(nodes[i - 1], nodes[i]);
+                polynomials[i - 1].update_nodes(nodes->at(i), nodes->at(i + 1));
         }
     };
 }// namespace to

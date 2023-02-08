@@ -203,11 +203,27 @@ namespace to {
     class Trajectory {
     public:
         using Scalar = Biped::rcg::Scalar;
+        using Nodes = std::vector<Node<Scalar>>;
+        using NodesRef = std::shared_ptr<Nodes>;
+        using ModelRef = std::shared_ptr<Model>;
+
+        Trajectory(
+            ModelRef model,
+            NodesRef base_angular_nodes,
+            NodesRef base_linear_nodes,
+            NodesRef joint_state_nodes,
+            const Scalar& dt)
+            : model{std::move(model)},
+              base_angular(std::move(base_angular_nodes), dt, 3),
+              base_linear(std::move(base_linear_nodes), dt, 3),
+              joint_state(std::move(joint_state_nodes), dt, joint_space_dim) {}
 
     private:
         Spline<Scalar, RotationAdaptor<Scalar>> base_angular;
         Spline<Scalar, Polynomial<Scalar>> base_linear;
         Spline<Scalar, Polynomial<Scalar>> joint_state;
+
+        ModelRef model;
     };
 
 }// namespace to
