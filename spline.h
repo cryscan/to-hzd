@@ -42,10 +42,10 @@ namespace to {
             Eigen::MatrixX4<ADScalar> a(d, 4);
             ADScalar _1{1.0}, _2{2.0}, _3{3.0};
 
-            a.col(0) << head.x;
-            a.col(1) << head.xd;
-            a.col(2) << -_1 / (dt * dt) * (_3 * (head.x - tail.x) + dt * (_2 * head.xd + tail.xd));
-            a.col(3) << _1 / (dt * dt * dt) * (_2 * (head.x - tail.x) + dt * (head.xd + tail.xd));
+            a.col(0) = head.x;
+            a.col(1) = head.xd;
+            a.col(2) = -_1 / (dt * dt) * (_3 * (head.x - tail.x) + dt * (_2 * head.xd + tail.xd));
+            a.col(3) = _1 / (dt * dt * dt) * (_2 * (head.x - tail.x) + dt * (head.xd + tail.xd));
 
             Eigen::Vector4<ADScalar> vt{_1, t(0), t(0) * t(0), t(0) * t(0) * t(0)};
             p = a * vt;
@@ -98,7 +98,7 @@ namespace to {
             fun_ad_p.new_dynamic(x);
 
             Eigen::Vector3<ADScalar> v = fun_ad_p.Forward(0, t);
-            q << exp(v).coeffs();
+            q = exp(v).coeffs();
 
             fun_q.Dependent(q);
             fun_q.optimize("no_compare_op");
@@ -110,7 +110,7 @@ namespace to {
             // Body angular velocity
             Eigen::Quaternion<ADScalar> r(Eigen::Vector4<ADScalar>(fun_ad_q.Forward(0, t)));
             Eigen::Quaternion<ADScalar> rd(Eigen::Vector4<ADScalar>(fun_ad_q.Jacobian(t)));
-            u << to_body_angular_velocity(r, rd);
+            u = to_body_angular_velocity(r, rd);
 
             fun_u.Dependent(u);
             fun_u.optimize("no_compare_op");

@@ -125,11 +125,11 @@ namespace to {
             Eigen::Vector4<Scalar> p{0, 0, 0, 1};
             switch (side) {
                 case Side::LEFT:
-                    joint_space_jacobian.leftCols<3>() << jacobians.fr_trunk_J_L_foot(state.q);
+                    joint_space_jacobian.leftCols<3>() = jacobians.fr_trunk_J_L_foot(state.q);
                     p = homogeneous_transforms.fr_trunk_X_L_foot(state.q) * p;
                     break;
                 case Side::RIGHT:
-                    joint_space_jacobian.rightCols<3>() << jacobians.fr_trunk_J_R_foot(state.q);
+                    joint_space_jacobian.rightCols<3>() = jacobians.fr_trunk_J_R_foot(state.q);
                     p = homogeneous_transforms.fr_trunk_X_R_foot(state.q) * p;
                     break;
             }
@@ -138,7 +138,7 @@ namespace to {
 
             // J =  [   R       ,   0   ,   R Jr    ]
             //      [   -R px   ,   R   ,   R Jp    ]
-            Eigen::Matrix<Scalar, 6, state_dim> jacobian = Eigen::Matrix<Scalar, 6, state_dim>::Zero();
+            Eigen::Matrix<Scalar, 6, state_dim> jacobian = decltype(jacobian)::Zero();
             Eigen::Matrix3<Scalar> r = state.r.toRotationMatrix();
             jacobian.block<3, 3>(0, 0) = r;      // Base angular -> EE angular
             jacobian.block<3, 3>(3, 0) = -r * px;// Base angular -> EE linear
@@ -187,14 +187,14 @@ namespace to {
             CppAD::Independent(x);
 
             auto contact_jacobian = foot_jacobian(x, side);
-            y << contact_jacobian * state.body_velocity();
+            y = contact_jacobian * state.body_velocity();
 
             CppAD::ADFun<double> fun;
             fun.Dependent(x, y);
             auto fun_ad = fun.base2ad();
 
             Eigen::Matrix<Scalar, 6, pose_state_dim> jacobian_derivative;
-            x << state.state_vector();
+            x = state.state_vector();
             jacobian_derivative << fun_ad.Jacobian(x);
             return jacobian_derivative;
         }
